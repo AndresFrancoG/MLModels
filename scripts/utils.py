@@ -2,6 +2,27 @@ import pandas as pd
 import numpy as np
 from typing import Tuple
 
+def add_bias_column(X: pd.DataFrame) -> pd.DataFrame:
+    """Adds the column 'bias_col' of ones for the bias calculation
+
+    Parameters
+    ----------
+    X : pd.DataFrame
+        Input data
+
+    Returns
+    -------
+    pd.DataFrame
+        Input data plus bias column
+    """
+    X_mod = X.copy()
+    ones_aux = np.ones(X.shape[0])
+    X_mod['bias_col'] = ones_aux
+    cols = X_mod.columns
+    cols_reordered = [cols[i-1] for i,x in enumerate(cols)]
+    X_mod = X_mod[cols_reordered]
+    return X_mod
+
 
 def min_max_scaling(ds: pd.Series) -> Tuple[pd.Series, Tuple[float,float]]:
     """Linearly scales a pandas series from min -> max to 0 -> 1

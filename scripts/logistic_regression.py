@@ -39,7 +39,7 @@ class LogisticRegression:
             y_np[y_np==-1]=0
             y_res[cat] = y_np
 
-        X_mod = LogisticRegression.add_bias_column(X)
+        X_mod = utl.add_bias_column(X)
         X_np = X_mod.to_numpy()
 
         # Inicializes data
@@ -70,7 +70,7 @@ class LogisticRegression:
         np.array
             Predicted categories
         """
-        X_mod = LogisticRegression.add_bias_column(X)
+        X_mod = utl.add_bias_column(X)
         X_np = X_mod.to_numpy()
 
         # Predictions
@@ -104,28 +104,6 @@ class LogisticRegression:
         y_pred = (w*X).sum(axis=1)
         den = 1 + np.exp(-y_pred)
         return 1/den
-
-    @staticmethod
-    def add_bias_column(X: pd.DataFrame) -> pd.DataFrame:
-        """Adds the column 'bias_col' of ones for the bias calculation
-
-        Parameters
-        ----------
-        X : pd.DataFrame
-            Input data
-
-        Returns
-        -------
-        pd.DataFrame
-            Input data plus bias column
-        """
-        X_mod = X.copy()
-        ones_aux = np.ones(X.shape[0])
-        X_mod['bias_col'] = ones_aux
-        cols = X_mod.columns
-        cols_reordered = [cols[i-1] for i,x in enumerate(cols)]
-        X_mod = X_mod[cols_reordered]
-        return X_mod
 
     @staticmethod
     def log_cost_function(w: np.array, X: np.array, y: np.array) -> float:
