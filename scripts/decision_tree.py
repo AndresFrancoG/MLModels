@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from typing import List, Dict
+from typing import List, Dict, Tuple
 import math
 
 class Decision_Tree_Classifier:
