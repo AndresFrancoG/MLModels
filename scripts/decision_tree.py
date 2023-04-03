@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Tuple
 import math
+import random
 
 class Decision_Tree_Classifier:
     def __init__(self) -> None:
@@ -17,11 +18,20 @@ class Decision_Tree_Classifier:
         tp = res_dict['type']
         attr = res_dict['attr']
         if tp == 'cat':
-            res = res_dict['res'][x[attr]]
+            if x[attr] in res_dict['res'].keys():
+                res = res_dict['res'][x[attr]]
+            else:
+                rn = random.randint(0, len(list(res_dict['res'].keys())) - 1)
+                res = res_dict['res'][list(res_dict['res'].keys())[rn]]
         else:
             val = res_dict['vals']
             i = self.recover_index(x[attr],val)
-            res = res_dict['res'][str(i)]
+            if str(i) in res_dict['res'].keys():
+                res = res_dict['res'][str(i)]
+            else:
+                rn = random.randint(0, len(list(res_dict['res'].keys())) - 1)
+                res = res_dict['res'][list(res_dict['res'].keys())[rn]]
+            
         
         if isinstance(res,dict):
             return self.predict_single(x, res)
@@ -202,11 +212,11 @@ class Decision_Tree_Classifier:
         for i,v in enumerate(splits):
             if i > 0:
                 if val > splits[i-1] and val <= v:
-                    return i
+                    return round(i)
             else:
                 if val <= v:
-                    return i
-        return len(splits)
+                    return round(i)
+        return round(len(splits))
     
     def get_splits(self, x:pd.Series, y:pd.Series) -> np.array:
         """Returns the splits of the categorical data x, using the median x for each category of y
