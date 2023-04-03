@@ -390,3 +390,69 @@ class Decision_Tree_Regressor(Decision_Tree_Classifier):
         x_v = x_vals[min_index][0]
 
         return attr, x_v       
+    
+class Random_Forest:
+    def __init__(self, n_trees = 100) -> None:
+        self.random_forest = []
+        self.n_trees = n_trees
+
+    def fit(self, X: pd.DataFrame, y: pd.Series, X_cat_cols: List) -> None:
+        """Fits a random forest model.  The ensemble of models is saved 
+        as the list of trees (dicts) self.random_forest
+
+        Parameters
+        ----------
+        X : pd.DataFrame
+            Input data
+        y : pd.Series
+            Target data
+        X_cat_cols : List
+            Categorical columns
+        """
+        # Bootstrap resample and fitting
+        n_samples = len(X)
+        self.random_forest = []
+
+        df = X.copy()
+        df['res'] = y.copy()
+
+        for i in range(self.n_trees):
+            X_bs = df.sample(n_samples,replace=True).reset_index()
+            dtc = Decision_Tree_Classifier()
+            dtc.fit(X_bs[X.columns], X_bs['res'], X_cat_cols)
+            self.random_forest.append(dtc)
+
+    # Single prediction
+    def single_predict(self, X: pd.Series) -> int:
+        """Returns the predicted value of a single entry of input data
+
+        Parameters
+        ----------
+        X : pd.Series
+            Input data
+
+        Returns
+        -------
+        int
+            Predicted category
+        """
+        cv = X.to_frame().transpose()
+        y_vals = []
+        for i, dt in enumerate(self.random_forest):
+            y_vals.append(dt.predict(cv).iloc[0])
+        return max(set(y_vals), key = y_vals.count)
+    
+    def predict(self, X: pd.DataFrame) -> pd.Series:
+        """Predicts the categories related to the input data X
+
+        Parameters
+        ----------
+        X : pd.DataFrame
+            Input data
+
+        Returns
+        -------
+        pd.Series
+            Predicted categories
+        """
+        return X.reset_index()[X.columns].apply(lambda x: self.single_predict(x), axis=1)
