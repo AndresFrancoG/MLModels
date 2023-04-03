@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
-from typing import List, Dict
+from typing import List, Dict, Tuple
 import math
+import random
 
 class Decision_Tree_Classifier:
     def __init__(self) -> None:
@@ -17,11 +18,20 @@ class Decision_Tree_Classifier:
         tp = res_dict['type']
         attr = res_dict['attr']
         if tp == 'cat':
-            res = res_dict['res'][x[attr]]
+            if x[attr] in res_dict['res'].keys():
+                res = res_dict['res'][x[attr]]
+            else:
+                rn = random.randint(0, len(list(res_dict['res'].keys())) - 1)
+                res = res_dict['res'][list(res_dict['res'].keys())[rn]]
         else:
             val = res_dict['vals']
             i = self.recover_index(x[attr],val)
-            res = res_dict['res'][str(i)]
+            if str(i) in res_dict['res'].keys():
+                res = res_dict['res'][str(i)]
+            else:
+                rn = random.randint(0, len(list(res_dict['res'].keys())) - 1)
+                res = res_dict['res'][list(res_dict['res'].keys())[rn]]
+            
         
         if isinstance(res,dict):
             return self.predict_single(x, res)
@@ -202,11 +212,11 @@ class Decision_Tree_Classifier:
         for i,v in enumerate(splits):
             if i > 0:
                 if val > splits[i-1] and val <= v:
-                    return i
+                    return round(i)
             else:
                 if val <= v:
-                    return i
-        return len(splits)
+                    return round(i)
+        return round(len(splits))
     
     def get_splits(self, x:pd.Series, y:pd.Series) -> np.array:
         """Returns the splits of the categorical data x, using the median x for each category of y
@@ -380,3 +390,69 @@ class Decision_Tree_Regressor(Decision_Tree_Classifier):
         x_v = x_vals[min_index][0]
 
         return attr, x_v       
+    
+class Random_Forest:
+    def __init__(self, n_trees = 100) -> None:
+        self.random_forest = []
+        self.n_trees = n_trees
+
+    def fit(self, X: pd.DataFrame, y: pd.Series, X_cat_cols: List) -> None:
+        """Fits a random forest model.  The ensemble of models is saved 
+        as the list of trees (dicts) self.random_forest
+
+        Parameters
+        ----------
+        X : pd.DataFrame
+            Input data
+        y : pd.Series
+            Target data
+        X_cat_cols : List
+            Categorical columns
+        """
+        # Bootstrap resample and fitting
+        n_samples = len(X)
+        self.random_forest = []
+
+        df = X.copy()
+        df['res'] = y.copy()
+
+        for i in range(self.n_trees):
+            X_bs = df.sample(n_samples,replace=True).reset_index()
+            dtc = Decision_Tree_Classifier()
+            dtc.fit(X_bs[X.columns], X_bs['res'], X_cat_cols)
+            self.random_forest.append(dtc)
+
+    # Single prediction
+    def single_predict(self, X: pd.Series) -> int:
+        """Returns the predicted value of a single entry of input data
+
+        Parameters
+        ----------
+        X : pd.Series
+            Input data
+
+        Returns
+        -------
+        int
+            Predicted category
+        """
+        cv = X.to_frame().transpose()
+        y_vals = []
+        for i, dt in enumerate(self.random_forest):
+            y_vals.append(dt.predict(cv).iloc[0])
+        return max(set(y_vals), key = y_vals.count)
+    
+    def predict(self, X: pd.DataFrame) -> pd.Series:
+        """Predicts the categories related to the input data X
+
+        Parameters
+        ----------
+        X : pd.DataFrame
+            Input data
+
+        Returns
+        -------
+        pd.Series
+            Predicted categories
+        """
+        return X.reset_index()[X.columns].apply(lambda x: self.single_predict(x), axis=1)
